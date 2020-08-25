@@ -13,12 +13,10 @@ This is group HisRüstü's progress journal created for IE 48A of Summer'20 cour
 
 
 
-
 ### Final Project
-- Data
-- Project Proposal
 
-
+- [Data](housing_data_EVDS.csv) for our group. 
+- [Project Proposal](48A_Proposal.html)
 
 
 

@@ -1,0 +1,43 @@
+---
+title: "Project Proposal"
+output: html_document
+---
+
+
+## *Group his"**R**"üstü*
+
+### The summary of the data:
+
+The data on which we are working on projects includes housing price indexes. When we look in detail, it consists of monthly data for new and pre-owned houses. The data covers a period from 2013 to the last month. There are 91 rows, 165 columns. The first column shows the date, next 82 column covers data across the new home of the 81 provinces and Turkey.  In the remaining 82 columns, it is observed each of the cities and Turkey's overall secondhand houses' price indexes.
+
+
+```{r,warning=FALSE,message=FALSE}
+library(dplyr)
+```
+
+```{r}
+group_data<-read.csv("housing_data_EVDS.csv")
+group_data[,c(1:10)] %>% glimpse()
+```
+
+
+### Plan
+
+The planned schedule is as follows:
+
+- To clean, organize and make data easy to use
+- Visualizing, better understanding and explaining data
+- To detect seasonalities, if any
+- Identifying similarities between cities and investigating their causes
+- Make it filtered and visualized with Shiny
+- Predict future movements
+
+Packages that can be used during the schedule:
+
+- dplyr
+- ggplot2
+- shiny
+- forecast
+- lubridate
+- tidyverse
+
