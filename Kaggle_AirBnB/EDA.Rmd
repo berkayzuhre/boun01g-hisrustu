@@ -30,7 +30,7 @@ library(lubridate)
 library(tidyr)
 library(data.table)
 
-data <- readRDS("~data/AB_NYC_2019.rds")
+data <- readRDS("~/Documents/ml-machine/R-KaggleAirBnB/AB_NYC_2019.rds")
 ```
 
 ## Summary of The Dataset
@@ -125,14 +125,26 @@ aggregate(selected$price, list(selected$room_type), mean)
 ```{r top10-neighbour}
 tail(names(sort(table(selected$neighbourhood))), 10)
 
-#ggplot(selected[tail(names(sort(table(selected$neighbourhood))), 10)], aes(x=neighbourhood)) +
+#ggplot(selected[(tail(names(sort(table(selected$neighbourhood))), 10))], aes(x=neighbourhood)) +
 #  geom_bar(stat = "count") +
 #  labs(x = "neighbourhood") +
 #  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 
-
 ```{r price-neighbours}
 aggregate(selected$price, list(selected$room_type), mean)
+```
+
+
+```{r loc-price-availability, message=FALSE}
+ggplot(data, aes(x=neighbourhood_group, y=price)) + 
+  geom_point(aes(col=room_type, size=availability_365)) + 
+  geom_smooth(method="loess", se=F) + 
+  ylim(c(0, 10000)) + 
+  labs(title="Location Vs Price", 
+       subtitle="(availability, listing space types)", 
+       x="Location", 
+       y="Price", 
+       caption = "Source: AirBnB")
 ```
