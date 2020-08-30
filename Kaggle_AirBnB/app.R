@@ -25,27 +25,33 @@ ui <- fluidPage(
     # Sidebar with a slider input for number of bins 
     sidebarLayout(
         sidebarPanel(
-            sliderInput("max_price",
-                        "max_price:",
-                        min = 1,
-                        max = 10000,
-                        value = 50),
+           #sliderInput("max_price",
+           #            "max_price:",
+           #            min = 1,
+           #            max = 10000,
+           #            value = 50),
+           #
+           #sliderInput("min_price",
+           #            "min_price:",
+           #            min = 1,
+           #            max = 10000,
+           #            value = 200),
             
-            sliderInput("min_price",
-                        "min_price:",
-                        min = 1,
+            sliderInput("price",
+                        "Select a Price Range:",
+                        min = 0,
                         max = 10000,
-                        value = 200)
+                        value = c(50,200),
+                        sep = "" )
         ),
         
         # Show a plot of the generated distribution
         mainPanel(
             tabsetPanel(
                 tabPanel("Plot", plotOutput("location_vs_price")),
+                tabPanel("Map", plotOutput("map")),
                 tabPanel("Table", dataTableOutput("data_table"))
             )
-            #plotOutput("location_vs_price"),
-            #dataTableOutput("data_table")
         )
     )
 )
@@ -57,8 +63,19 @@ server <- function(input, output) {
         
         ggplot(data, aes(x=neighbourhood_group, y=price)) + 
             geom_point(aes(col=room_type, size=availability_365)) + 
-            ylim(c(input$min_price, input$max_price)) + 
+            ylim(c(input$price[1], input$price[2])) + 
             labs(title="Location Vs Price", 
+                 subtitle="(availability, listing space types)", 
+                 x="Location", 
+                 y="Price", 
+                 caption = "Source: AirBnB")
+    })
+    
+    output$map <- renderPlot({
+        
+        ggplot(data, aes(x=longitude, y=latitude)) + 
+            geom_point(aes(color=neighbourhood_group,)) + 
+            labs(title="Room Map", 
                  subtitle="(availability, listing space types)", 
                  x="Location", 
                  y="Price", 
