@@ -9,7 +9,8 @@ This is group HisRüstü's progress journal created for IE 48A of Summer'20 cour
 - [Faruk Tüfekçi](https://pjournal.github.io/boun01-faruktufekci)
 
 
-### Assignment
+### Group Assignment
+- [EDA](https://github.com/pjournal/boun01g-hisrustu/blob/gh-pages/Kaggle_AirBnB/EDA.html)
 
 
 
