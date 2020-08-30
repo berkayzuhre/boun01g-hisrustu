@@ -1,0 +1,265 @@
+---
+title: "Group Project-1 (Airbnb)"
+author: "hisRustu"
+date: "30 08 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+### Introduction
+
+
+  Since 2008, guests and hosts have used Airbnb to expand on traveling possibilities and present more unique, personalized way of experiencing the world. This dataset describes the listing activity and metrics in NYC, NY for 2019.
+  This data file includes all needed information to find out more about hosts, geographical availability, necessary metrics to make predictions and draw conclusions.[Kaggle](https://www.kaggle.com/dgomonov/new-york-city-airbnb-open-data)
+
+ 
+
+### Acknowledgements
+
+This public dataset is a part of Airbnb, and the original source can be found on this [website](http://insideairbnb.com/).
+
+ 
+
+### Libraries and Dataset
+
+```{r libraries, message=FALSE}
+
+library(dplyr)
+
+library(ggplot2)
+
+library(lubridate)
+
+library(tidyr)
+
+library(data.table)
+library(ggthemes)
+my_data <- read.csv("C:/Users/zuhre.b/Downloads/268833_611395_bundle_archive/AB_NYC_2019.csv")
+saveRDS(my_data, "Airbnb.rds")
+data <- readRDS("Airbnb.rds")
+
+```
+
+ 
+
+## Summary of The Dataset
+
+  There are nearly 49K rows and 16 columns. Data types seem correct, except the last_review column. There are null values in 2 columns, number_of_reviews and last_review. These 2 columns are correlated, if there are no reviews, then the values are null in that row as default which corresponds to the relation between number of reviews and the last review.
+
+ 
+
+```{r null, message=FALSE}
+
+na_count <-sapply(data, function(y) sum(length(which(is.na(y)))))
+
+na_count <- data.frame(na_count)
+
+na_count
+
+```
+
+ 
+
+  Let's select important columns and see some of the rows as sample.
+
+ 
+
+```{r}
+
+selected <- select(data, c(neighbourhood_group, neighbourhood, room_type, price, minimum_nights, number_of_reviews, last_review, reviews_per_month, calculated_host_listings_count, availability_365))
+
+head(selected)
+
+```
+
+ 
+
+  There are 3 different room types. One can book a private room or share the room and one also can book the entire place posted.
+
+ 
+
+```{r values, message=FALSE}
+
+print(c(c(unique(selected["neighbourhood_group"])),c(unique(selected["room_type"]))))
+
+```
+
+ 
+
+###Analysis of the Data
+
+ 
+
+  Let's see the room type distribution in terms of frequency and density.
+
+ 
+
+```{r i-frequency, message=FALSE}
+
+ggplot(selected, aes(x=room_type)) +
+
+  geom_bar(stat = "count") +
+  theme_gdocs()+
+
+  labs(title="Room Type Distribution",x = "Room Type",y="Frequency")
+
+```
+
+ 
+
+From the distribution graph,
+
+  nearly 52% prefer booking the entire place posted,
+
+  nearly 52% prefer booking a private room,
+
+  the rest 2% prefer booking a shared room.
+
+ 
+
+ 
+
+```{r i-density, message=FALSE}
+
+ggplot(selected, aes(x=room_type)) +
+
+  geom_bar(aes(y = (..count..)/sum(..count..))) +
+   theme_gdocs()+
+
+  labs(title="Room Type Distribution",x = "Room Type",y="Density")
+
+```
+
+ 
+
+  Moreover, to see the areas with the highest preference in New York, neighborhood group distribution must be analyzed.
+
+ 
+
+```{r n-density, message=FALSE}
+
+ggplot(selected, aes(x=neighbourhood_group)) +
+
+  geom_bar(aes(y = (..count..)/sum(..count..))) +
+   theme_gdocs()+
+
+  labs(title="Neighborhood Group Distribution",x = "Areas",y="Density")
+
+```
+  From the graph, Brooklyn and Manhattan are the leading areas in Airnbnb rental. Followed by Queens, Bronx, and Staten Island. There are a few reasons why for the nature of this distribution. Firstly, Bronx is a relatively dangerous area compared to the other areas. Statistics show that Bronx has the highes crime rate in the city, followed by Queens. In the case of Staten Island, the high-end problem arise along with transportation. Staten Island is known for its over the top luxury rentals. In fact, the area ranks among the most expensive rental estates in the U.S. Moreover, Staten Island is far from the tourist attractions, making it a undesirable location for tourists. Manhattan and Brooklyn lead the touristic facade of the city. Manhattan owns the most frequently visited touristic attractions, thus, it's easier for tourists to commute if they rent an airbnb rental in Manhattan. The same situation rises with Brooklyn, as it offers an extensive night life, restaurants, concept cafes, and fewer tourist attractions. The price of rentals will be analyzed next.
+
+
+
+
+
+
+  To check the price range and how many rentals were rented for a specific price, the price distribution should be visualized. Firstly, the statistics for the column, price, are calculated.
+```{r price-desc, message=FALSE}
+
+c(min(data$price), max(data$price), mean(data$price), median(data$price))
+
+```
+
+ From the calculation, it's clearly seen that even though price has a large range, the median and the mean of the price are relatively low. To see the frequency of each price, ggplot is used to visualize. The limit for the x axis, price, is selected as 1000. By doing so, the plot becomes easily readable and outliers are removed. From the graph, the price frequency lies on the left-hand side. The Airbnb users primarily prefer cheaper rentals as the majority of the price frequency is shifted to the left side of the graph.
+
+
+
+```{r price-hist-lim, message=FALSE}
+
+ggplot(selected, aes(x=price)) +
+
+  geom_histogram(color="black", fill="red", binwidth=20) +
+   theme_gdocs()+
+
+  xlim(c(0,1000))+
+  labs(title="Frequency Distribution of Price", x="Price",y="Number of Rentals")
+
+```
+
+ The code below provides the neighborhoods mostly prefered by Airbnb users.
+
+ 
+
+```{r top10-neighbour, message=FALSE}
+
+tail(names(sort(table(selected$neighbourhood))), 10)
+
+
+```
+
+ 
+  Moreover, the code below shows the average price for each type of rental. From the results, Entire home or apartments have the highest price mean as expected, followed by private rooms and shared rooms, again, as expected.
+ 
+
+```{r price-neighbours, message=FALSE}
+
+aggregate(selected$price, list(selected$room_type), mean)
+
+```
+
+  The plot below shows the prices based on the location of the listing. From the plot, It's observed that Manhattan has the most number of listings and the highest price rentals. Followed by Brooklyn. Bronx, Queen, and Staten Island have the lowest price listings and the lowest number of listings. Due to the reasons mentioned before.
+
+ 
+```{r loc-price-availability, message=FALSE}
+
+ggplot(data, aes(x=neighbourhood_group, y=price)) +
+  
+  geom_point(aes(col=room_type, size=availability_365)) +
+  theme_gdocs()+
+  
+  geom_smooth(stat="smooth",color="blue",method="loess", se=F) +
+  
+  ylim(c(0, 10000)) +
+  
+  labs(title="Location and Price Comparison",
+       
+       subtitle="(Availability, Listing Type)",
+       
+       x="Location",
+       
+       y="Price",
+       
+       caption = "Source: AirBnB")+
+  scale_color_manual(name="Listing Type", labels=c("Entire Home or Apartment","Private Room","Shared Room"),values=c("red","green","blue"))+
+  theme(text=element_text(size=9))+
+  scale_size_continuous(name="Availability")
+
+
+```
+
+  Moreover, we can use latitude and longitude data to visualize the available rooms with their respective positions on map. This plot will help us understand the neighborhoods in a better way but it doesn't mean much by itself. There is a common assumption that prices are homogeneous in the same areas and we can test this hypothesis with the following plots.
+
+```{r message=FALSE}
+  ggplot(data, aes(x=longitude, y=latitude)) + 
+  geom_point(aes(color=neighbourhood_group)) + 
+  labs(title="Room Map by Neighbourhood", 
+       subtitle="Available Rooms in New York", 
+       x="Latitude", 
+       y="Longitude", 
+       caption = "Source: AirBnB")
+```
+
+  In this plot we created "Price Bins" for the 20% percentiles of the room price. Surprisingly most of the areas look very similar and we can't distinguish the individual area groups easily. Manhattan area of the city seems to have the most expensive rentals. Which supports our previous arguments.
+  
+```{r message=FALSE}
+bins=quantile(data$price, c(0.20, 0.40, 0.60,0.8,1), type = 1)
+
+data$Price_Intervals=ifelse(data$price<60, "0-20 percentile",ifelse(data$price<90,"20-40 percentile",ifelse(data$price<130,"40-60 percentile",ifelse(data$price<200,"60-80 percentile","80-100 percentile"))))
+
+ggplot(data, aes(x=longitude, y=latitude)) + 
+  geom_point(aes(color=Price_Intervals)) + 
+  labs(title="Room Map by Price Bin", 
+       subtitle="Available Rooms in New York", 
+       x="Latitude", 
+       y="Longitude", 
+       caption = "Source: AirBnB")
+```
+```
+
+  
+  
+  
