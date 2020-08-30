@@ -30,7 +30,7 @@ library(lubridate)
 library(tidyr)
 library(data.table)
 
-data <- readRDS("~/Documents/ml-machine/R-KaggleAirBnB/AB_NYC_2019.rds")
+data <- readRDS("data/AB_NYC_2019.rds")
 ```
 
 ## Summary of The Dataset
@@ -72,10 +72,13 @@ ggplot(selected, aes(x=room_type)) +
   labs(x = "room_type")
 ```
 
-It seems that;
-  nearly 52% preferred to book entire home/apt,
-  nearly 52% preferred to book private room,
-  the rest 2% preferred to share the room.
+From the distribution graph,
+
+  nearly 52% prefer booking the entire place posted,
+
+  nearly 52% prefer booking a private room,
+
+  the rest 2% prefer booking a shared room.
   
 
 ```{r i-density}
@@ -85,7 +88,7 @@ ggplot(selected, aes(x=room_type)) +
 
 ```
 
-neighbourhood_group dist bla bla
+Moreover, to see the areas with the highest preference in New York, neighborhood group distribution must be analyzed.
 
 ```{r n-density}
 ggplot(selected, aes(x=neighbourhood_group)) +
@@ -93,22 +96,22 @@ ggplot(selected, aes(x=neighbourhood_group)) +
   labs(x = "neighbourhood_group")
 ```
 
-
+From the graph, Brooklyn and Manhattan are the leading areas in Airnbnb rental. Followed by Queens, Bronx, and Staten Island. There are a few reasons why for the nature of this distribution. Firstly, Bronx is a relatively dangerous area compared to the other areas. Statistics show that Bronx has the highes crime rate in the city, followed by Queens. In the case of Staten Island, the high-end problem arise along with transportation. Staten Island is known for its over the top luxury rentals. In fact, the area ranks among the most expensive rental estates in the U.S. Moreover, Staten Island is far from the tourist attractions, making it a undesirable location for tourists. Manhattan and Brooklyn lead the touristic facade of the city. Manhattan owns the most frequently visited touristic attractions, thus, it's easier for tourists to commute if they rent an airbnb rental in Manhattan. The same situation rises with Brooklyn, as it offers an extensive night life, restaurants, concept cafes, and fewer tourist attractions. The price of rentals will be analyzed next.
 
 ```{r price-hist}
 ggplot(selected, aes(x=price)) + 
   geom_histogram(color="black", fill="white", binwidth=70)
 ```
 
-
+To check the price range and how many rentals were rented for a specific price, the price distribution should be visualized. Firstly, the statistics for the column, price, are calculated.
 
 ```{r price-desc}
 c(min(data$price), max(data$price), mean(data$price), median(data$price))
 ```
 
+From the calculation, it's clearly seen that even though price has a large range, the median and the mean of the price are relatively low. To see the frequency of each price, ggplot is used to visualize. The limit for the x axis, price, is selected as 1000. By doing so, the plot becomes easily readable and outliers are removed. From the graph, the price frequency lies on the left-hand side. The Airbnb users primarily prefer cheaper rentals as the majority of the price frequency is shifted to the left side of the graph.
 
-
-```{r price-hist-lim}
+```{r price-hist-lim, warning=FALSE}
 ggplot(selected, aes(x=price)) + 
   geom_histogram(color="black", fill="white", binwidth=20) +
   xlim(c(0,1000))
@@ -120,27 +123,29 @@ ggplot(selected, aes(x=price)) +
 aggregate(selected$price, list(selected$room_type), mean)
 ```
 
-
+The code below provides the neighborhoods mostly prefered by Airbnb users.
 
 ```{r top10-neighbour}
 tail(names(sort(table(selected$neighbourhood))), 10)
 
-#ggplot(selected[(tail(names(sort(table(selected$neighbourhood))), 10))], aes(x=neighbourhood)) +
-#  geom_bar(stat = "count") +
-#  labs(x = "neighbourhood") +
-#  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+z <- tail(names(sort(table(selected$neighbourhood))), 10)
+ggplot(selected[selected$neighbourhood %in% z,], aes(x=neighbourhood)) +
+  geom_bar(stat = "count") +
+  labs(x = "neighbourhood") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
+Moreover, the code below shows the average price for each type of rental. From the results, Entire home or apartments have the highest price mean as expected, followed by private rooms and shared rooms, again, as expected.
 
 ```{r price-neighbours}
 aggregate(selected$price, list(selected$room_type), mean)
 ```
 
+The plot below shows the prices based on the location of the listing. From the plot, It's observed that Manhattan has the most number of listings and the highest price rentals. Followed by Brooklyn. Bronx, Queen, and Staten Island have the lowest price listings and the lowest number of listings. Due to the reasons mentioned before.
 
 ```{r loc-price-availability, message=FALSE}
 ggplot(data, aes(x=neighbourhood_group, y=price)) + 
   geom_point(aes(col=room_type, size=availability_365)) + 
-  geom_smooth(method="loess", se=F) + 
   ylim(c(0, 10000)) + 
   labs(title="Location Vs Price", 
        subtitle="(availability, listing space types)", 
