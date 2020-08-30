@@ -20,7 +20,7 @@ data <- readRDS("data/AB_NYC_2019.rds")
 ui <- fluidPage(
     
     # Application title
-    titlePanel("AirBnB Dataset Interactive Data Analysis"),
+    titlePanel("AirBnB Dataset Interactive Panel"),
     
     # Sidebar with a slider input for number of bins 
     sidebarLayout(
@@ -37,11 +37,17 @@ ui <- fluidPage(
             #            max = 10000,
             #            value = 200),
             
+            selectInput("room",
+                        "Room Type",
+                        choices=data$room_type,
+                        selected = "Private room",
+                        multiple = TRUE),
+            
             sliderInput("price",
-                        "Select a Price Range:",
+                        "Price Range:",
                         min = 0,
                         max = 10000,
-                        value = c(50,200),
+                        value = c(2000,4000),
                         sep = "" )
         ),
         
@@ -74,22 +80,24 @@ server <- function(input, output) {
     output$map <- renderPlot({
         
         new_frame<- data%>% filter(price %in% (input$price[1]:input$price[2]))
+        new_frame<- new_frame%>% filter(room_type==input$room)
         
         ggplot(new_frame, aes(x=longitude, y=latitude)) + 
             geom_point(aes(color=neighbourhood_group,)) + 
             labs(title="Room Map", 
-                 subtitle="(availability, listing space types)", 
-                 x="Location", 
-                 y="Price", 
+                 subtitle="areas", 
+                 x="longitude", 
+                 y="latitude", 
                  caption = "Source: AirBnB")
     })
     
     output$data_table <- renderDataTable(
-        selected <- select(data, neighbourhood_group, neighbourhood, room_type, price, minimum_nights, 
-                           number_of_reviews, last_review, reviews_per_month, calculated_host_listings_count, 
-                           availability_365),
-        z <- tail(names(sort(table(selected$neighbourhood))), 10),
-        selected[selected$neighbourhood %in% z,]
+        #selected <- select(data, neighbourhood_group, neighbourhood, room_type, price, minimum_nights, 
+        #                   number_of_reviews, last_review, reviews_per_month, calculated_host_listings_count, 
+        #                   availability_365),
+        #z <- tail(names(sort(table(selected$neighbourhood))), 10),
+        #View(selected[selected$neighbourhood %in% z,])
+        data%>% filter( price %in% (input$price[1]:input$price[2]) & room_type==input$room)
     )
 }
 
