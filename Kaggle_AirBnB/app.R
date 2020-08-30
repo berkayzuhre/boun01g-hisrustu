@@ -54,8 +54,8 @@ ui <- fluidPage(
         # Show a plot of the generated distribution
         mainPanel(
             tabsetPanel(
-                tabPanel("Plot", plotOutput("location_vs_price")),
                 tabPanel("Map", plotOutput("map")),
+                tabPanel("Plot", plotOutput("location_vs_price")),
                 tabPanel("Table", dataTableOutput("data_table"))
             )
         )
