@@ -76,7 +76,7 @@ From the distribution graph,
 
   nearly 52% prefer booking the entire place posted,
 
-  nearly 52% prefer booking a private room,
+  nearly 46% prefer booking a private room,
 
   the rest 2% prefer booking a shared room.
   
