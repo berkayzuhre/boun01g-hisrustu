@@ -11,7 +11,7 @@ This is group HisRüstü's progress journal created for IE 48A of Summer'20 cour
 
 ### Group Assignment: New York City Airbnb Open Data - Kaggle
 - [Exploratory Data Analysis](https://pjournal.github.io/boun01g-hisrustu/Kaggle_AirBnB/airBnB_assignment.html)
-- For Shiny App run the code below on console.
+- For [Shiny App](https://faruktufekci.shinyapps.io/NYC_AirBnB_EDA_hisRustu/) run the code below on console.
 
 `runGitHub("pjournal/boun01g-hisrustu", subdir = "Kaggle_AirBnB/app.R", ref = "gh-pages")`
 
