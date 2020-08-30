@@ -1,0 +1,138 @@
+---
+title: "AirBnB Dataset - Exploratory Data Analysis"
+author: "his'R'ustu"
+date: "8/30/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+See the description taken from Kaggle page.
+
+### Context
+Since 2008, guests and hosts have used Airbnb to expand on traveling possibilities and present more unique, personalized way of experiencing the world. This dataset describes the listing activity and metrics in NYC, NY for 2019.
+
+### Content
+This data file includes all needed information to find out more about hosts, geographical availability, necessary metrics to make predictions and draw conclusions.
+
+### Acknowledgements
+This public dataset is part of Airbnb, and the original source can be found on this [website](http://insideairbnb.com/).
+
+### Libraries and Dataset
+```{r libraries, message=FALSE}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(tidyr)
+library(data.table)
+
+data <- readRDS("~data/AB_NYC_2019.rds")
+```
+
+## Summary of The Dataset
+There are nearly 49K rows and 16 columns. Data types seem correct expect last_review column. It's necessary to convert last_review to date format.
+
+```{r summary}
+glimpse(data)
+data$last_review <- as.Date(parse_date_time(data$last_review, c('ymd')))
+```
+
+There are null values in 2 columns: number_of_reviews and last_review. These are correlated, if there is no reviews than these two value is null in that row and it seems logical.
+
+```{r null}
+na_count <-sapply(data, function(y) sum(length(which(is.na(y)))))
+na_count <- data.frame(na_count)
+na_count
+```
+
+Let's select important columns and see some of the rows as sample.
+
+```{r select}
+selected <- select(data, neighbourhood_group, neighbourhood, room_type, price, minimum_nights, number_of_reviews, last_review, reviews_per_month, calculated_host_listings_count, availability_365)
+head(selected)
+```
+
+There are 3 different room types. One can book a private room or share the room and also one can book an entire place.
+
+```{r values}
+print(c(c(unique(selected["neighbourhood_group"])),c(unique(selected["room_type"]))))
+```
+
+## Initial Analysis
+
+Let's see the room type distribution (frequency/density).
+
+```{r i-frequency}
+ggplot(selected, aes(x=room_type)) +
+  geom_bar(stat = "count") +
+  labs(x = "room_type")
+```
+
+It seems that;
+  nearly 52% preferred to book entire home/apt,
+  nearly 52% preferred to book private room,
+  the rest 2% preferred to share the room.
+  
+
+```{r i-density}
+ggplot(selected, aes(x=room_type)) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) +
+  labs(x = "room_type")
+
+```
+
+neighbourhood_group dist bla bla
+
+```{r n-density}
+ggplot(selected, aes(x=neighbourhood_group)) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) +
+  labs(x = "neighbourhood_group")
+```
+
+
+
+```{r price-hist}
+ggplot(selected, aes(x=price)) + 
+  geom_histogram(color="black", fill="white", binwidth=70)
+```
+
+
+
+```{r price-desc}
+c(min(data$price), max(data$price), mean(data$price), median(data$price))
+```
+
+
+
+```{r price-hist-lim}
+ggplot(selected, aes(x=price)) + 
+  geom_histogram(color="black", fill="white", binwidth=20) +
+  xlim(c(0,1000))
+```
+
+
+
+```{r price-room-types}
+aggregate(selected$price, list(selected$room_type), mean)
+```
+
+
+
+```{r top10-neighbour}
+tail(names(sort(table(selected$neighbourhood))), 10)
+
+#ggplot(selected[tail(names(sort(table(selected$neighbourhood))), 10)], aes(x=neighbourhood)) +
+#  geom_bar(stat = "count") +
+#  labs(x = "neighbourhood") +
+#  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+
+```{r price-neighbours}
+aggregate(selected$price, list(selected$room_type), mean)
+```
