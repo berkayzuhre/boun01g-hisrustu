@@ -25,17 +25,17 @@ ui <- fluidPage(
     # Sidebar with a slider input for number of bins 
     sidebarLayout(
         sidebarPanel(
-           #sliderInput("max_price",
-           #            "max_price:",
-           #            min = 1,
-           #            max = 10000,
-           #            value = 50),
-           #
-           #sliderInput("min_price",
-           #            "min_price:",
-           #            min = 1,
-           #            max = 10000,
-           #            value = 200),
+            #sliderInput("max_price",
+            #            "max_price:",
+            #            min = 1,
+            #            max = 10000,
+            #            value = 50),
+            #
+            #sliderInput("min_price",
+            #            "min_price:",
+            #            min = 1,
+            #            max = 10000,
+            #            value = 200),
             
             sliderInput("price",
                         "Select a Price Range:",
@@ -73,7 +73,9 @@ server <- function(input, output) {
     
     output$map <- renderPlot({
         
-        ggplot(data, aes(x=longitude, y=latitude)) + 
+        new_frame<- data%>% filter(price %in% (input$price[1]:input$price[2]))
+        
+        ggplot(new_frame, aes(x=longitude, y=latitude)) + 
             geom_point(aes(color=neighbourhood_group,)) + 
             labs(title="Room Map", 
                  subtitle="(availability, listing space types)", 
