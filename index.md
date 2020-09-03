@@ -16,11 +16,11 @@ This is group HisRüstü's progress journal created for IE 48A of Summer'20 cour
 `runGitHub("pjournal/boun01g-hisrustu", subdir = "Kaggle_AirBnB/app.R", ref = "gh-pages")`
 
 
-### Final Project
+### Final Project: Housing Data EVDS
 
 - [Data](housing_data_EVDS.csv) for our group. 
 - [Project Proposal](48A_Proposal.html)
-
+- [Exploratory Data Analysis](Hausing-data.html)
 
 
 ### Bonus Project
