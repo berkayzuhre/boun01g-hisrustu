@@ -1,0 +1,269 @@
+---
+title: "Group Project: Housing Data"
+author: "Group hisa'R'üstü"
+output: html_document
+---
+
+## Data Preprocess
+These data, in the 81 provinces of Turkey contains the information first-hand and second-hand home sales. These data, in the 81 provinces of Turkey contains the information first-hand and second-hand home sales. Migration movements in cities, economic movements throughout the country and some changes in cities (such as opening factories) are some of the factors that affect home sales data.
+Some packages need to be used to analyze the data. First of all, these packages were included and the data was taken from csv file.  In order to observe the content of our group data, the head and the tale part were printed.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(cluster)
+library(factoextra)
+library(sp) 
+library(openxlsx)
+
+library(tseries)
+library(forecast)
+library(readxl)
+library(data.table)
+
+library(ggplot2)
+library(car)
+
+evds = read.csv("https://raw.githubusercontent.com/pjournal/boun01g-hisrustu/gh-pages/housing_data_EVDS.csv")
+
+mapPositions = read.xlsx("https://raw.githubusercontent.com/pjournal/boun01g-hisrustu/gh-pages/tr.xlsx")
+
+TUR <- readRDS("TUR_1_sp.rds")
+TUR_fixed <- fortify(TUR)
+
+evds[c(90:100),c(1:5)]
+
+
+
+ names_and_numbers <- tibble(id=rownames(TUR@data),
+                                 city=TUR@data$NAME_1) %>% 
+   left_join(mapPositions, by ="city")
+ 
+ final_map <- left_join(TUR_fixed, names_and_numbers, by = "id")
+ 
+ 
+```
+
+After the 92nd row, rows gives information about the numerical . Therefore, numerical data was separated from these information rows and put into another data set.
+
+```{r echo=TRUE}
+convertName<-function(x,y){
+  x <- gsub(".*- (.+) -.*", "\\1", x)
+  x <- gsub("\u008d", "i", x)
+  x <- gsub("€", "C", x)
+  x <- gsub("ž", "S", x)
+  x <- gsub("Ÿ", "s", x)
+  x <- gsub("\u0081", "u", x)
+  x <- gsub("˜", "I", x)
+  x <- gsub("§", "g", x)
+  x <- gsub("”", "o", x)
+  x <- paste(y, x, sep="_")
+  return(x)
+}
+datainfo = evds[c(92:1080),]
+cityNames<-evds[c(95:258),2]
+firstHandCityNames<-cityNames[c(1:82)]
+secondHandCityNames<-cityNames[c(83:164)]
+evds = evds[c(1:91),]
+firstHandCityNames<-convertName(firstHandCityNames,"F")
+secondHandCityNames<-convertName(secondHandCityNames,"S")
+allNames= c("Tarih",firstHandCityNames,secondHandCityNames)
+names(evds)<-allNames
+```
+
+The home sales data included data with zeros after the comma. To avoid these problems, zeros are cleared from the data after the comma.
+
+```{r pressure, echo=TRUE}
+for(i in c(1:165)){
+  evds[,i] <- gsub(",","",evds[,i])
+}
+evds[, c(2:165)] <- sapply(evds[, c(2:165)], as.numeric)
+names(evds)[1] = "Date"
+```
+
+In order to convert the Date column to a date format, it was necessary to add days to the Date. That's why the day was added to the Date column.
+
+```{r echo=TRUE}
+evds$Date = paste(evds$Date,"01",sep="-")
+evds = evds %>%
+  mutate(Date=as.Date(Date, format="%Y-%m-%d")) %>%
+  mutate(Year=year(Date), Month=month(Date))
+
+```
+
+In the data analysis process, a season column may be required to examine the relationship between sales data and seasons, so the season column was created.
+
+```{r}
+find_season <- function(mon){
+  season = NULL
+  
+  if(between(mon, 3, 5)){
+    season = "Spring"
+  } else if(between(mon, 6, 8)){
+    season = "Summer"
+  } else if(between(mon, 9, 11)){
+    season = "Fall"
+  } else{
+    season = "Winter"
+  }
+  
+  return(season)
+}
+evds$Season = sapply(evds$Month, find_season)
+```
+
+As mentioned earlier, the data includes the sales numbers of second-hand and first-hand homes. Here it looked very complicated when naming data. To avoid this situation, the letter "F" was used for naming the first hand data and the letter "S" for the second hand.
+
+When the data is checked carefully, there is some missing data. To guess what these missing data are:
+Total data was analyzed by collecting all data.
+As it is realized that it is equal, empty data (NA) are accepted as 0.
+
+```{r echo=TRUE}
+evds[,c(2)] - rowSums(evds[,c(3:83)], na.rm = FALSE)
+evds[,c(2)] - rowSums(evds[,c(3:83)], na.rm = TRUE)
+evds[is.na(evds)] <- 0
+```
+
+## Time Series Analysis
+
+In order to do Time Series Analysis, the data should be converted to time series in format. Then we see that variance is increasing over time so that it's multiplicative. Also, it may include seasonality and it can be understood better from the decomposition. Decomposed time series is plotted below.
+
+```{r}
+ts_F_Turkey <- ts(evds$F_Turkey,freq=12,start = 2013)
+ts_F_Turkey
+
+plot(ts_F_Turkey, main = "Time Series Plot", ylab = "F_Turkey")
+plot(decompose(ts_F_Turkey, type = "multiplicative"))
+```
+
+After the times series visualization and analysis, the autocorrelation function of the time series is plotted. The autocorrelation values peak at lag 12 and at lag 24. It means that there is a monthly seasonality factor.
+
+```{r}
+acf(ts_F_Turkey, lag.max = 24)
+```
+
+Looking time series plot of the data, it’s seen that variance changes over time. It is decided that transformation is needed due to this non-stationarity. After the logarithmic transformation, you can see the change below.
+
+```{r}
+ts_F_Turkey_log <- ts(log(evds$F_Turkey),freq=12,start = 2013)
+
+ts_F_Turkey_log_reg_diff=diff(ts_F_Turkey_log)
+tsdisplay(ts_F_Turkey_log_reg_diff, lag.max = 24)
+```
+
+After logarithmic transformation, it’s seen that differencing is needed; therefore, one order regular differencing applied. In the figure above, you can see the significant acf values at different lags. They peak at lags 12, 24 and so on. This pattern means seasonality and seasonal differencing is needed.
+
+```{r}
+ts_F_Turkey_log_reg_s_diff=diff(ts_F_Turkey_log_reg_diff,12)
+tsdisplay(ts_F_Turkey_log_reg_s_diff, lag.max = 24)
+```
+
+ACF and PACF plots of the time series suggest ARIMA (1,0,0)(2,0,0) 12.
+
+```{r}
+model_first <- Arima(ts_F_Turkey_log, order=c(1,0,0), seasonal=c(2,0,0))
+model_first
+```
+
+The statistical evidence can be found with the inspection of the residual of the model. The residuals should be normal and the Q-Q plot can be used to inspection.
+
+```{r}
+resid <- model_first$residuals
+tsdisplay(resid)
+
+qqPlot(resid)
+
+plot(c(model_first$residuals), main="Scatter Plot of Residuals", xlab = "Time
+     Index", ylab = "Residuals")
+```
+
+The Q-Q plot suggests that the residuals are distributed normally but at the extreme sides there are flaws. We tried to explain all the months but it could not be explained fully. Secondly, the scatter plot examined, we want then to be random. As can be seen the residuals almost random except just left hand side.
+
+## Time Series - Future Prediction (2020-2)
+
+We're good to go with the model. Therefore, we can now predict next months. Let's predict the second half of 2020.
+
+```{r}
+forecast_sales=forecast(model_first , h=5)
+real_forecast=exp(forecast_sales$mean)
+real_forecast
+```
+
+Note that to make the multiplicative model additive we made log
+transformation, so we will transform them back to obtained sales forecast.
+Plot the forecast to see the pattern.
+
+```{r}
+plot(forecast(model_first, h=5), main="F_Turkey")
+```
+
+Similar procedures followed and predictions made for second hand sales level("S_Turkey") this time.
+
+```{r, echo=FALSE, message=FALSE}
+ts_S_Turkey <- ts(evds$S_Turkey,freq=12,start = 2013)
+ts_S_Turkey_log <- ts(log(evds$S_Turkey),freq=12,start = 2013)
+
+ts_S_Turkey_log_reg_diff=diff(ts_S_Turkey_log)
+#tsdisplay(ts_S_Turkey_log_reg_diff, lag.max = 24)
+
+ts_S_Turkey_log_reg_s_diff=diff(ts_S_Turkey_log_reg_diff,12)
+#tsdisplay(ts_S_Turkey_log_reg_s_diff, lag.max = 24)
+
+model_second <- Arima(ts_S_Turkey_log, order=c(2,1,2), seasonal=c(1,0,0))
+model_second
+
+resid <- model_second$residuals
+#tsdisplay(resid)
+
+#qqPlot(resid)
+
+#plot(c(model_second$residuals), main="Scatter Plot of Residuals", xlab = "Time
+#     Index", ylab = "Residuals")
+
+forecast_sales=forecast(model_second , h=5)
+forecast_sales
+real_forecast_second=exp(forecast_sales$mean)
+```
+
+```{r}
+real_forecast_second
+plot(forecast(model_second, h=5), main="S_Turkey")
+```
+
+Similar procedures followed and predictions made for second hand sales level("F_Antalya") this time.
+
+```{r, echo=FALSE, message=FALSE}
+ts_F_Antalya <- ts(evds$F_Antalya,freq=12,start = 2013)
+ts_F_Antalya_log <- ts(log(evds$F_Antalya),freq=12,start = 2013)
+
+#ts_S_Turkey_log_reg_diff=diff(ts_S_Turkey_log)
+#tsdisplay(ts_S_Turkey_log_reg_diff, lag.max = 24)
+
+#ts_S_Turkey_log_reg_s_diff=diff(ts_S_Turkey_log_reg_diff,12)
+#tsdisplay(ts_S_Turkey_log_reg_s_diff, lag.max = 24)
+
+model_first_antalya <- Arima(ts_F_Antalya_log, order=c(0,1,1), seasonal=c(2,0,0))
+model_first_antalya
+
+#resid <- model_first_antalya$residuals
+#tsdisplay(resid)
+
+#qqPlot(resid)
+
+#plot(c(model_second$residuals), main="Scatter Plot of Residuals", xlab = "Time
+#     Index", ylab = "Residuals")
+
+forecast_sales=forecast(model_first_antalya , h=5)
+forecast_sales
+real_forecast_second=exp(forecast_sales$mean)
+```
+
+```{r}
+real_forecast_second
+plot(forecast(model_second, h=5), main="F_Antalya")
+```
+
+PS: Note that to make the multiplicative model additive we made log
+transformation, so we will transform them back to obtained sales forecast.

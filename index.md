@@ -19,8 +19,11 @@ This is group HisRüstü's progress journal created for IE 48A of Summer'20 cour
 ### Final Project: Housing Data EVDS
 
 - [Data](housing_data_EVDS.csv) for our group. 
+- [Preprocessing Script](preprocess.R)
 - [Project Proposal](48A_Proposal.html)
 - [Exploratory Data Analysis](Hausing-data.html)
+- [Project Report](housing_data_project.html)
+- [Project Presentation](google.com)
 
 
 ### Bonus Project
