@@ -1,0 +1,497 @@
+---
+title: "Group Data Analysis"
+author: "Group hisa'R'üstü"
+output: html_document
+---
+
+## Data Preprocess
+These data, in the 81 provinces of Turkey contains the information first-hand and second-hand home sales. These data, in the 81 provinces of Turkey contains the information first-hand and second-hand home sales. Migration movements in cities, economic movements throughout the country and some changes in cities (such as opening factories) are some of the factors that affect home sales data.
+Some packages need to be used to analyze the data. First of all, these packages were included and the data was taken from csv file.  In order to observe the content of our group data, the head and the tale part were printed.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(cluster)
+library(factoextra)
+library(sp) 
+library(openxlsx)
+library(mapproj)
+library(gridExtra)
+library(ggthemes)
+library(tseries)
+library(forecast)
+library(readxl)
+library(data.table)
+library(ggplot2)
+library(car)
+
+evds = read.csv("https://raw.githubusercontent.com/pjournal/boun01g-hisrustu/gh-pages/housing_data_EVDS.csv")
+
+
+TUR <- readRDS("TUR_1_sp.rds")
+
+TUR_fixed <- fortify(TUR)
+
+ 
+ 
+```
+
+After the 92nd row, rows gives information about the numerical . Therefore, numerical data was separated from these information rows and put into another data set.
+
+```{r echo=FALSE}
+
+convertName<-function(x,y){
+  x <- gsub(".*- (.+) -.*", "\\1", x)
+  x <- gsub("\u008d", "i", x)
+  x <- gsub("€", "C", x)
+  x <- gsub("ž", "S", x)
+  x <- gsub("Ÿ", "s", x)
+  x <- gsub("\u0081", "u", x)
+  x <- gsub("˜", "I", x)
+  x <- gsub("§", "g", x)
+  x <- gsub("”", "o", x)
+  x <- paste(y, x, sep="_")
+  return(x)
+}
+datainfo = evds[c(92:1080),]
+cityNames<-evds[c(95:258),2]
+firstHandCityNames<-cityNames[c(1:82)]
+secondHandCityNames<-cityNames[c(83:164)]
+evds = evds[c(1:91),]
+firstHandCityNames<-convertName(firstHandCityNames,"F")
+secondHandCityNames<-convertName(secondHandCityNames,"S")
+allNames= c("Tarih",firstHandCityNames,secondHandCityNames)
+names(evds)<-allNames
+```
+
+The home sales data included data with zeros after the comma. To avoid these problems, zeros are cleared from the data after the comma.
+
+```{r pressure, echo=TRUE}
+for(i in c(1:165)){
+  evds[,i] <- gsub(",","",evds[,i])
+}
+evds[, c(2:165)] <- sapply(evds[, c(2:165)], as.numeric)
+names(evds)[1] = "Date"
+```
+
+In order to convert the Date column to a date format, it was necessary to add days to the Date. That's why the day was added to the Date column.
+
+```{r echo=TRUE}
+evds$Date = paste(evds$Date,"01",sep="-")
+evds = evds %>%
+  mutate(Date=as.Date(Date, format="%Y-%m-%d")) %>%
+  mutate(Year=year(Date), Month=month(Date))
+
+```
+
+In the data analysis process, a season column may be required to examine the relationship between sales data and seasons, so the season column was created.
+
+```{r}
+find_season <- function(mon){
+  season = NULL
+  
+  if(between(mon, 3, 5)){
+    season = "Spring"
+  } else if(between(mon, 6, 8)){
+    season = "Summer"
+  } else if(between(mon, 9, 11)){
+    season = "Fall"
+  } else{
+    season = "Winter"
+  }
+  
+  return(season)
+}
+evds$Season = sapply(evds$Month, find_season)
+```
+
+
+When the data is checked carefully, there is some missing data. To guess what these missing data are:
+Total data was analyzed by collecting all data.
+As it is realized that it is equal, empty data (NA) are accepted as 0.
+
+```{r echo=TRUE}
+evds[,c(2)] - rowSums(evds[,c(3:83)], na.rm = FALSE)
+evds[,c(2)] - rowSums(evds[,c(3:83)], na.rm = TRUE)
+evds[is.na(evds)] <- 0
+```
+
+## Analyzing the Data
+A plot line has been drawn to observe the sales movement of the first and second hand houses by years. As can be seen from the graphic, the amount of house sales increased every year.
+
+```{r echo=TRUE}
+ggplot(evds, aes(x=Date)) + 
+  geom_line(aes(y=S_Turkey, color="S")) + 
+  geom_line(aes(y=F_Turkey, color="F")) +
+  theme_minimal() + 
+  ggtitle("Sum of Pricing Indexes") + 
+  labs(x = "Year", y = "Pricing Index")
+```
+Turkey the behavior of sales in general, the city has been interpreted by comparing the behavior of a relationship between them. As can be seen in the graph, the sales behavior of Adana is similar to the sales data across the country. We cannot generalize for every city, but we can say that the same criteria are effective across the country.
+
+```{r}
+ggplot(evds, aes(x=Date, color = Month)) + 
+  geom_line(aes(y=S_Adana, color="S1")) + 
+  geom_line(aes(y=F_Adana, color="F1")) +
+  theme_minimal() + 
+  ggtitle("Adana") + 
+  labs(x = "Year", y = "Pricing Index")
+```
+
+The most advanced and largest city in Turkey: Ankara and Istanbul. Therefore, the sales data of these two cities were examined separately. When the data of the two cities are analyzed on the graph, the sales data of Istanbul is higher than Ankara. When the sum of the data of all cities is plotted, the total data of Ankara and Istanbul is very high compared to other cities.
+
+```{r}
+ggplot(evds, aes(x=Date, color = Month)) + 
+  geom_line(aes(y=S_Ankara, color="S_Ankara")) + 
+  geom_line(aes(y=F_Ankara, color="F_Ankara")) +
+  geom_line(aes(y=S_Istanbul, color="S_Istanbul")) + 
+  geom_line(aes(y=F_Istanbul, color="F_Istanbul")) +
+  theme_minimal() + 
+  ggtitle("Istanbul Vs Ankara") + 
+  labs(x = "Year", y = "Sales_Count")
+```
+
+## Plot Analysis
+
+evds2 contains what percentage of the values make up the total, maybe abnormal changes may be caught / a result may be reached:
+
+```{r}
+evds2 = evds
+evds2[,c(2:83)] = evds2[,c(2:83)]*100/evds2[,2]
+evds2[,c(84:165)] = evds2[,c(84:165)]*100/evds2[,84]
+```
+
+In order to examine the house sales data of the Aegean ve Akdeniz region, whose population has increased considerably during the summer season, some of the cities in the Aegean and Akdeniz Region were selected from all data.
+(Antalya, Balıkesir, İzmir, Aydın, )
+```{r}
+ege_bolge <- evds[,c(1,10,14,43,13,61,166,167,168)]
+head(ege_bolge)
+```
+
+
+Between 2013-2020, a bar plot was drawn for Antalya's sales data by months. By observing the year-by-year sales movement, it can be said that the sales have increased each year, and the sales are also increasing every year in the summer months.
+
+```{r}
+ege_bolge %>%  group_by(Month,Season) %>% summarise(Sum = sum(F_Antalya)) %>%
+  ggplot(data = ., aes(x = Month, y = Sum, fill = Season)) +
+  geom_bar(stat="identity", position = position_dodge(), colour = "blue") +
+  theme_minimal() +
+  theme(legend.position="top")+
+  labs(title = "Antalya")+
+  geom_text(aes(label=Sum), vjust=1.6, color="black",
+      position = position_dodge(0.9), size=3.5)
+```
+
+Between 2013-2020, a line plot was drawn for Balıkesir's sales data by months. By observing the month-by-month sales movement, it can be said that the sales have increased end of the year, an
+```{r}
+ggplot(ege_bolge, aes(x=Month, y = ege_bolge[,c(2:2)], group = Year, colour = Season)) + 
+  geom_line() +
+  theme_minimal() +
+  theme(legend.position="top")+
+  labs(title = "Balikesir",y="Monthly Index")
+```
+
+First and second hand sales data between Ankara and Istanbul by years.
+```{r}
+ggplot(evds, aes(x=Date, color = Month)) + 
+  geom_line(aes(y=S_Ankara, color="S_Ankara")) + 
+  geom_line(aes(y=F_Ankara, color="F_Ankara")) +
+  geom_line(aes(y=S_Istanbul, color="S_Istanbul")) + 
+  geom_line(aes(y=F_Istanbul, color="F_Istanbul")) +
+  theme_minimal() + 
+  ggtitle("Comparison") + 
+  labs(x = "Year", y = "Sales Count")
+```
+Total sales dates by years and seasons by selected cities in the aegean region with bar chart
+
+```{r}
+#
+ege_bolge %>% group_by(Year,Season) %>% summarise(SumData=sum(F_Antalya, F_Balikesir, F_Izmir, F_Aydin, F_Mugla)) %>% 
+    ggplot(data = ., aes(x = Year, y = SumData, fill = Season)) +
+      geom_bar(stat="identity", position = position_dodge(), colour = "black") +
+      theme_minimal() +
+      theme(legend.position="top")+
+      labs(title = "Ege_Bolge")
+```
+
+### Clustering by Housing Price Index
+
+By classifying the Housing Price Index data of the cities according to the similarities of the movement, it is desired to analyze the index behavior more logically. Therefore, all columns are scaled for first and second hand indexes. We also plot non-scaled clustering results to see their effect.
+
+First hand only city columns are scaled so that they are grouped by movement similarities.
+
+Only Second hand city columns are scaled so that they are grouped according to their motion similarity.
+
+First hand only city columns used, not scaled so often grouped by size of numbers
+
+```{r}
+
+createCluster<-function(data2,clusterSize,scale=TRUE){
+  data<-data2
+  
+  if(scale){
+    data<-scale(data)
+  }
+  set.seed(2)
+  fit <- kmeans(t(data), clusterSize)
+  return(fit$cluster)
+}
+
+
+clusters = tibble(TUR@data$NAME_1)
+names(clusters)=c("city")
+clusterSize=5
+
+clusters<-cbind(clusters,createCluster(evds[,c(3:83)],clusterSize))
+clusters<-cbind(clusters,createCluster(evds[,c(3:83)],clusterSize,scale=FALSE))
+clusters<-cbind(clusters,createCluster(evds[,c(85:165)],clusterSize))
+clusters<-cbind(clusters,createCluster(evds[,c(85:165)],clusterSize,scale=FALSE))
+clusters<-cbind(clusters,createCluster(evds[,c(85:165)]-evds[,c(3:83)],clusterSize))
+names(clusters)<-c("city","scaledFirst","First","scaledSecond","Second","firstMinusSecond")
+row.names(clusters)<-NULL
+
+```
+
+```{r}
+mapPlot<-function(x,z,mapPositions){
+  
+mapPositions2<-cbind(mapPositions,x)
+
+ab<-cbind(c(1:81),mapPositions2)
+ab[,1]=as.character(ab[,1])
+colnames(ab)[1]="id"
+
+final_map <- left_join(TUR_fixed, ab, by = "id")
+
+
+ggplot(final_map)+
+  theme_minimal()+
+  geom_polygon( aes_string(x = "long", y = "lat", group = "group", fill= z),
+                color = "grey", alpha = 1/5) +
+  coord_map()+
+  scale_fill_distiller(name = paste(paste("Cities by",z),"Hand Housing Price Index"), # change titel legend
+                       palette = "Spectral")+ # change the color scheme
+  theme(legend.position = "bottom") # chagne the legend position
+ 
+}
+
+mapPositions = tibble(TUR@data$NAME_1)
+names(mapPositions)=c("city")
+
+```
+
+```{r}
+mapPlot(clusters[,c(2:5)],"scaledFirst",mapPositions)
+```
+
+```{r}
+mapPlot(clusters[,c(2:5)],"First",mapPositions)
+```
+
+```{r}
+mapPlot(clusters[,c(2:5)],"scaledSecond",mapPositions)
+```
+
+```{r}
+mapPlot(clusters[,c(2:5)],"Second",mapPositions)
+```
+
+```{r}
+mapPlot(clusters[,c(2:6)],"firstMinusSecond",mapPositions)
+```
+
+
+İstanbul, Ankara, Adana, Kayseri, Antalya, Bursa, Eskişehir, Mersin, Van are among the largest 30 cities in Turkey. To see the difference between first-hand and second-hand prices, the means of their respective price index are calculated. As a common fact, first-hand prices are higher than the second-hand prices. However, Van shows an exceptional result as its second-hand price is higher. The plot is generated to show how large the difference is among these cities. Ankara and İstanbul are the leading cities in terms of the price gap, with Ankara on top and İstanbul the runner-up.
+
+```{r}
+S_means <- c(mean(evds$S_Istanbul),mean(evds$S_Ankara),mean(evds$S_Adana),mean(evds$S_Kayseri),mean(evds$S_Antalya),mean(evds$S_Bursa),mean(evds$S_Eskisehir), mean(evds$S_Mersin),mean(evds$S_Van))
+F_means <- c(mean(evds$F_Istanbul),mean(evds$F_Ankara),mean(evds$F_Adana),mean(evds$F_Kayseri),mean(evds$F_Antalya),mean(evds$F_Bursa),mean(evds$F_Eskisehir), mean(evds$F_Mersin),mean(evds$F_Van))
+cities<- c("Istanbul","Ankara","Adana","Kayseri","Antalya","Bursa","Eskişehir","Mersin","Van")
+large_city_data <- data.frame(cities, S_means, F_means)
+
+ggplot(large_city_data)+
+  geom_point(aes(S_means,cities,color="red"))+
+  geom_point(aes(F_means,cities,color="green"))+
+  geom_segment(aes(x = S_means,y = cities,xend = F_means,yend = cities,),arrow=arrow(length = unit(0.15, "inches")))+
+  theme_gdocs()+
+  labs(x="First-hand and Second-hand Means", y="Large Cities", title="First-hand and Second-hand Prices of Large Cities")+
+  scale_color_manual(name="Index Type",labels=c("Second-hand","First-hand"),values=c("red","green"))+
+  theme(
+    text= element_text(size=8, color="black")
+    
+  )
+```
+
+
+## Time Series Analysis
+
+In order to do Time Series Analysis, the data should be converted to time series in format. Then we see that variance is increasing over time so that it's multiplicative. Also, it may include seasonality and it can be understood better from the decomposition. Decomposed time series is plotted below.
+
+```{r}
+ts_F_Turkey <- ts(evds$F_Turkey,freq=12,start = 2013)
+ts_F_Turkey
+
+plot(ts_F_Turkey, main = "Time Series Plot", ylab = "F_Turkey")
+plot(decompose(ts_F_Turkey, type = "multiplicative"))
+```
+
+After the times series visualization and analysis, the autocorrelation function of the time series is plotted. The autocorrelation values peak at lag 12 and at lag 24. It means that there is a monthly seasonality factor.
+
+```{r}
+acf(ts_F_Turkey, lag.max = 24)
+```
+
+Looking time series plot of the data, it’s seen that variance changes over time. It is decided that transformation is needed due to this non-stationarity. After the logarithmic transformation, you can see the change below.
+
+```{r}
+ts_F_Turkey_log <- ts(log(evds$F_Turkey),freq=12,start = 2013)
+
+ts_F_Turkey_log_reg_diff=diff(ts_F_Turkey_log)
+tsdisplay(ts_F_Turkey_log_reg_diff, lag.max = 24)
+```
+
+After logarithmic transformation, it’s seen that differencing is needed; therefore, one order regular differencing applied. In the figure above, you can see the significant acf values at different lags. They peak at lags 12, 24 and so on. This pattern means seasonality and seasonal differencing is needed.
+
+```{r}
+ts_F_Turkey_log_reg_s_diff=diff(ts_F_Turkey_log_reg_diff,12)
+tsdisplay(ts_F_Turkey_log_reg_s_diff, lag.max = 24)
+```
+
+ACF and PACF plots of the time series suggest ARIMA (1,0,0)(2,0,0) 12.
+
+```{r}
+model_first <- Arima(ts_F_Turkey_log, order=c(1,0,0), seasonal=c(2,0,0))
+model_first
+```
+
+The statistical evidence can be found with the inspection of the residual of the model. The residuals should be normal and the Q-Q plot can be used to inspection.
+
+```{r}
+resid <- model_first$residuals
+tsdisplay(resid)
+
+qqPlot(resid)
+
+plot(c(model_first$residuals), main="Scatter Plot of Residuals", xlab = "Time
+     Index", ylab = "Residuals")
+```
+
+The Q-Q plot suggests that the residuals are distributed normally but at the extreme sides there are flaws. We tried to explain all the months but it could not be explained fully. Secondly, the scatter plot examined, we want then to be random. As can be seen the residuals almost random except just left hand side.
+
+## Time Series - Future Prediction (2020-2)
+
+We're good to go with the model. Therefore, we can now predict next months. Let's predict the second half of 2020.
+
+```{r}
+forecast_sales=forecast(model_first , h=5)
+real_forecast=exp(forecast_sales$mean)
+real_forecast
+```
+
+Note that to make the multiplicative model additive we made log
+transformation, so we will transform them back to obtained forecast.
+Plot the forecast to see the pattern.
+
+```{r}
+plot(forecast(model_first, h=5), main="F_Turkey")
+```
+
+Similar procedures followed and predictions made for second hand sales level("S_Turkey") this time.
+
+```{r, echo=FALSE, message=FALSE}
+ts_S_Turkey <- ts(evds$S_Turkey,freq=12,start = 2013)
+ts_S_Turkey_log <- ts(log(evds$S_Turkey),freq=12,start = 2013)
+
+ts_S_Turkey_log_reg_diff=diff(ts_S_Turkey_log)
+#tsdisplay(ts_S_Turkey_log_reg_diff, lag.max = 24)
+
+ts_S_Turkey_log_reg_s_diff=diff(ts_S_Turkey_log_reg_diff,12)
+#tsdisplay(ts_S_Turkey_log_reg_s_diff, lag.max = 24)
+
+model_second <- Arima(ts_S_Turkey_log, order=c(2,1,2), seasonal=c(1,0,0))
+model_second
+
+resid <- model_second$residuals
+#tsdisplay(resid)
+
+#qqPlot(resid)
+
+#plot(c(model_second$residuals), main="Scatter Plot of Residuals", xlab = "Time
+#     Index", ylab = "Residuals")
+
+forecast_sales=forecast(model_second , h=5)
+forecast_sales
+real_forecast_second=exp(forecast_sales$mean)
+```
+
+```{r}
+real_forecast_second
+plot(forecast(model_second, h=5), main="S_Turkey")
+```
+
+Similar procedures followed and predictions made for second hand sales level("F_Antalya") this time.
+
+```{r, echo=FALSE, message=FALSE}
+ts_F_Antalya <- ts(evds$F_Antalya,freq=12,start = 2013)
+ts_F_Antalya_log <- ts(log(evds$F_Antalya),freq=12,start = 2013)
+
+#ts_S_Turkey_log_reg_diff=diff(ts_S_Turkey_log)
+#tsdisplay(ts_S_Turkey_log_reg_diff, lag.max = 24)
+
+#ts_S_Turkey_log_reg_s_diff=diff(ts_S_Turkey_log_reg_diff,12)
+#tsdisplay(ts_S_Turkey_log_reg_s_diff, lag.max = 24)
+
+model_first_antalya <- Arima(ts_F_Antalya_log, order=c(0,1,1), seasonal=c(2,0,0))
+model_first_antalya
+
+#resid <- model_first_antalya$residuals
+#tsdisplay(resid)
+
+#qqPlot(resid)
+
+#plot(c(model_second$residuals), main="Scatter Plot of Residuals", xlab = "Time
+#     Index", ylab = "Residuals")
+
+forecast_sales=forecast(model_first_antalya , h=5)
+forecast_sales
+real_forecast_f_antalya=exp(forecast_sales$mean)
+```
+
+```{r}
+real_forecast_f_antalya
+plot(forecast(model_first_antalya, h=5), main="F_Antalya")
+```
+
+## Time Series - Future Prediction (2020 Plots)
+
+PS: Note that to make the multiplicative model additive we made log
+transformation, so we will transform them back to obtained forecasts.
+
+### Turkey First Sale 2020
+
+```{r}
+t_first_2020 <- c(ts_F_Turkey[85:91], real_forecast)
+plot_list = list(real_value = data.frame(x=c(1:7), y=t_first_2020[1:7]),
+                  forecasted = data.frame(x=c(7:12), y=t_first_2020[7:12]))
+ggplot(bind_rows(plot_list, .id="types"), aes(x, y, colour=types)) + geom_line() + ggtitle("Turkey First Sale 2020")
+```
+
+### Turkey Second Hand Sale 2020
+
+```{r}
+t_second_2020 <- c(ts_S_Turkey[85:91], real_forecast_second)
+plot_list = list(real_value = data.frame(x=c(1:7), y=t_second_2020[1:7]),
+                  forecasted = data.frame(x=c(7:12), y=t_second_2020[7:12]))
+ggplot(bind_rows(plot_list, .id="types"), aes(x, y, colour=types)) + geom_line() + ggtitle("Turkey Second Hand Sale 2020")
+```
+
+### Antalya First Sale 2020
+
+```{r}
+antalya_2020 <- c(ts_F_Antalya[85:91], real_forecast_f_antalya)
+plot_list = list(real_value = data.frame(x=c(1:7), y=antalya_2020[1:7]),
+                  forecasted = data.frame(x=c(7:12), y=antalya_2020[7:12]))
+ggplot(bind_rows(plot_list, .id="types"), aes(x, y, colour=types)) + geom_line() + ggtitle("Antalya First Sale 2020")
+```
