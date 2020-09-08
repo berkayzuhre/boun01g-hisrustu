@@ -1,6 +1,7 @@
 This is group HisRüstü's progress journal created for IE 48A of Summer'20 course at Boğaziçi University. 
 
 ## Group Members
+
 - [Hacı Mehmet İnce](https://pjournal.github.io/boun01-hmehmetince)
 - [Berkay Zühre](https://pjournal.github.io/boun01-berkayzuhre)
 - [Merve Gülsüm Kıratlı](https://pjournal.github.io/boun01-mervekiratl)
@@ -10,6 +11,7 @@ This is group HisRüstü's progress journal created for IE 48A of Summer'20 cour
 
 
 ### Group Assignment: New York City Airbnb Open Data - Kaggle
+
 - [Exploratory Data Analysis](https://pjournal.github.io/boun01g-hisrustu/Kaggle_AirBnB/airBnB_assignment.html)
 - For [Shiny App](https://faruktufekci.shinyapps.io/NYC_AirBnB_EDA_hisRustu/) run the code below on console.
 
@@ -23,13 +25,14 @@ This is group HisRüstü's progress journal created for IE 48A of Summer'20 cour
 - [Project Proposal](48A_Proposal.html)
 - [Exploratory Data Analysis](Hausing-data.html)
 - [Project Report](housing_data_project.html)
-- [Project Presentation](google.com)
+- [Project Presentation](Presentation.pdf)
+- For [Shiny App](https://faruktufekci.shinyapps.io/
+boun01g-hisrustu-project-housing-data/) run the code below on console.
+
+`runGitHub("pjournal/boun01g-hisrustu", subdir = "app.R", ref = "gh-pages")`
 
 
 ### Bonus Project
   Tutorial of package *plumber*
 - Written tutorial
 - Video tutorial
-
-
-
