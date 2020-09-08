@@ -192,7 +192,7 @@ real_forecast
 ```
 
 Note that to make the multiplicative model additive we made log
-transformation, so we will transform them back to obtained sales forecast.
+transformation, so we will transform them back to obtained forecast.
 Plot the forecast to see the pattern.
 
 ```{r}
@@ -257,13 +257,42 @@ model_first_antalya
 
 forecast_sales=forecast(model_first_antalya , h=5)
 forecast_sales
-real_forecast_second=exp(forecast_sales$mean)
+real_forecast_f_antalya=exp(forecast_sales$mean)
 ```
 
 ```{r}
-real_forecast_second
-plot(forecast(model_second, h=5), main="F_Antalya")
+real_forecast_f_antalya
+plot(forecast(model_first_antalya, h=5), main="F_Antalya")
 ```
 
+## Time Series - Future Prediction (2020 Plots)
+
 PS: Note that to make the multiplicative model additive we made log
-transformation, so we will transform them back to obtained sales forecast.
+transformation, so we will transform them back to obtained forecasts.
+
+### Turkey First Sale 2020
+
+```{r}
+t_first_2020 <- c(ts_F_Turkey[85:91], real_forecast)
+plot_list = list(real_value = data.frame(x=c(1:7), y=t_first_2020[1:7]),
+                  forecasted = data.frame(x=c(7:12), y=t_first_2020[7:12]))
+ggplot(bind_rows(plot_list, .id="types"), aes(x, y, colour=types)) + geom_line() + ggtitle("Turkey First Sale 2020")
+```
+
+### Turkey Second Hand Sale 2020
+
+```{r}
+t_second_2020 <- c(ts_S_Turkey[85:91], real_forecast_second)
+plot_list = list(real_value = data.frame(x=c(1:7), y=t_second_2020[1:7]),
+                  forecasted = data.frame(x=c(7:12), y=t_second_2020[7:12]))
+ggplot(bind_rows(plot_list, .id="types"), aes(x, y, colour=types)) + geom_line() + ggtitle("Turkey Second Hand Sale 2020")
+```
+
+### Antalya First Sale 2020
+
+```{r}
+antalya_2020 <- c(ts_F_Antalya[85:91], real_forecast_f_antalya)
+plot_list = list(real_value = data.frame(x=c(1:7), y=antalya_2020[1:7]),
+                  forecasted = data.frame(x=c(7:12), y=antalya_2020[7:12]))
+ggplot(bind_rows(plot_list, .id="types"), aes(x, y, colour=types)) + geom_line() + ggtitle("Antalya First Sale 2020")
+```
