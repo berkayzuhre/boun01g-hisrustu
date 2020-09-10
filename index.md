@@ -35,4 +35,4 @@ boun01g-hisrustu-project-housing-data/) run the code below on console.
 ### Bonus Project
   Tutorial of package *plumber*
 - Written tutorial
-- Video tutorial
+- [Video tutorial](https://www.youtube.com/watch?v=XI2Mi9ogRQc&feature=youtu.be/)
