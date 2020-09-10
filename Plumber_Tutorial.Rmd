@@ -1,0 +1,107 @@
+---
+title: "Plumber API Creator - IE48A"
+author: "Group hisaRustu"
+date: "9/10/2020"
+output: html_document
+---
+
+Berkay Zühre,
+Hacı Mehmet İnce,
+Merve Gülsüm Kıratlı,
+Abdullah Yıldız,
+Çağatay Nüfer,
+Faruk Tüfekçi
+
+## Plumber Package
+Firstly, you need to prepare R code to create an API plumber. Here, there are two different functions that defined for plumber. This comments with hashtags and stars allow plumber to make your R functions available as API.
+So you have to add these  before you run your app. One of the functions we have written has and optional parameter. It is optional because it has a default value so we can call it without any parameter.
+The other one has two parameters and they don't have default values so we call this functions with parameters
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+Our code has 3 different R scripts. They are the source code for our API, code to run the API App and another code to make requests on the API App. We couldn't make it run on an HTML file but you can find our source code in our Progress Journal.
+
+## R Script
+In this part we defined two functions. One of them adds two numbers by taking parameters and the other one prints a predefined text.
+```{r, eval=F, echo=T}
+# plumber.R
+
+#* Echo back the input
+#* @get /echo
+function(msg="") {
+  list(msg = paste0("IE48A-plumber message: This is a great tool for creating API's. -hisRüstü'", msg, "'"))
+}
+
+#* Return the sum of two numbers
+#* @param a The first number to add
+#* @param b The second number to add
+#* @post /sum
+function(a, b) {
+  as.numeric(a) + as.numeric(b)
+}
+
+```
+## Call Your API
+After you create your script, you save your file and close it. In the other script we start the library(plumber) and then we get our script by specified the path because we save the script in our working directory, we dont have to any more information. Then we actually run the API app and lumber create specialfor our code automatically.
+
+```{r, eval=F, echo=T}
+library(plumber)
+
+pr <- plumb("https://raw.githubusercontent.com/pjournal/boun01g-hisrustu/gh-pages/Plumber%20Source%20Code/plumber.R")
+
+pr$run(port=8000)
+```
+
+## Define Funtions to Send HTTP Requests
+
+"Get" function will retrieve information and "Post" function will give information to do API app then then retrieve some information as well.
+
+
+After that we open the new R studio window to reach our app. Here we have created two functions to reach our API, library(RCurl) is used.
+
+In our example we use simple functions like adding two numbers together. However we could also call a huge machine learning model with this code as well. So this part doesn't scale with API source code complexity.
+
+We had to open a new Rstudio window to run this part because our API App prevents new commands from executing. 
+
+```{r, eval=F, echo=T}
+library(RCurl)
+
+getSum<-function(a,b){
+  options(warn = -1)
+  
+  url<- paste("http://127.0.0.1:8000/sum?b=",b,"&a=",a,sep="")
+    
+  res<-postForm(url,.opts =list(httpheader = 
+        c('Content-Type' = 'application/json', Accept = 'application/json')))
+
+  temp<-gsub('^.|.$', '', res)
+  options(warn = 0)
+  return(as.integer(temp[1]))
+}
+
+message<-function(x){
+  options(warn = -1)
+
+  url<- paste("http://127.0.0.1:8000/echo?msg=",x,sep="")
+  
+  res<-getForm(url,.opts =list(httpheader = 
+                                 c('Content-Type' = 'application/json', Accept = 'application/json')))
+
+  
+  options(warn = 0)
+  return(res[[1]])
+  
+}
+```
+
+## Send Request to API
+```{r, eval=F, echo=T}
+getSum(24,10)
+
+
+message("hello_world!")
+
+```
