@@ -5,9 +5,9 @@ account: faruktufekci
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 2767452
-bundleId: 3604474
+bundleId: 3622748
 url: https://faruktufekci.shinyapps.io/boun01g-hisrustu-project-housing-data/
-when: 1599531433.53447
+when: 1599942072.40244
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: _config.yml|48A_Proposal.html|48A_Proposal.Rmd|gadm36_TUR_0_sp.rds|Hausing data.Rmd|Hausing-data.html|housing_data_EVDS.csv|housing_data_EVDS.xlsx|housing_data_project.html|housing_data_project.Rmd|index.md|preprocess.R|tr.xlsx|TUR_1_sp.rds|Kaggle_AirBnB
+ignoredFiles: _config.yml|48A_Proposal.html|48A_Proposal.Rmd|9-7-2020-IE48a.html|final_report_v2.html|final_report_v2.Rmd|Hausing data.Rmd|Hausing-data.html|housing_data_EVDS.csv|housing_data_EVDS.xlsx|housing_data_project.html|housing_data_project.Rmd|index.md|part1-analysis.html|Plumber_Tutorial.html|Plumber_Tutorial.Rmd|preprocess.R|Presentation.pdf|processedData.xlsx|tr.xlsx|TUR_1_sp.rds|Plumber Source Code/CallAPI.R|Plumber Source Code/CallFile.R|Plumber Source Code/plumber.R|Kaggle_AirBnB

@@ -12,10 +12,17 @@ library(tidyverse)
 library(lubridate)
 library(dplyr)
 library(openxlsx)
+library("reshape2")
 
 processedData = read.xlsx("https://raw.githubusercontent.com/pjournal/boun01g-hisrustu/gh-pages/processedData.xlsx")
 
 ege_bolge <- processedData[,c(10,14,43,13,61,92,96,125,95,143,166,167,168)]
+
+mnths <- c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
+
+mnths <- c(rep(mnths, 7), mnths[1:7])
+
+ege_bolge$Months <- str_c(ege_bolge$Year, "-", mnths)
 
 cityNames<-tibble(c("Antalya","Balikesir","Izmir","Aydin","Mugla"))
 
@@ -36,14 +43,22 @@ ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(
             
+            #sliderInput("year",
+            #            "Turkey Map by Year",
+            #            min = 2013,
+            #            max = 2020,
+            #            value = 2016),
+            
             sliderInput("year",
-                        "Turkey Map by Year",
+                        "Year Range:",
                         min = 2013,
-                        max = 2020,
-                        value = 2016),
+                        max = 2021,
+                        value = c(2018,2019),
+                        sep = "" ),
             
             selectInput("city","Select a city from Aegean Region",
-                choices=c("Antalya","Balikesir","Aydin","Izmir","Mugla"))
+                choices=c("Antalya","Balikesir","Aydin","Izmir","Mugla"),
+                selected = 'Aydin')
         ),
 
         # Show a plot of the generated distribution
@@ -62,29 +77,31 @@ ui <- fluidPage(
 server <- function(input, output) {
     
     
-    filtered_data <- reactive({ 
-        filter(ege_bolge, Year == input$year)
-    })
+   #filtered_data <- reactive({ 
+   #    filter(ege_bolge, Year >= input$year[1] & Year < input$year[2])[, c(as.numeric(cityNames[cityNames[1]==input$city][2]),as.numeric(cityNames[cityNames[1]==input$city][2])+5, 14)]
+   #})
     
     output$distPlot <- renderPlot({
-        ggplot(filtered_data(), aes(x=Month, y = filtered_data()[,(as.numeric(cityNames[cityNames[1]==input$city][2])+5)])) + 
-            geom_line(col="green") + ylim(0,5000)+
-            theme_minimal() +
-            theme(legend.position="top")+
-            labs(title = input$city,y="Monthly Index") + 
-            geom_line(aes(x=Month, y = filtered_data()[,(as.numeric(cityNames[cityNames[1]==input$city][2]))],col="red")) + ylim(0,5000)+ggtitle("Shiny Housing Price Index Comparison")+
-            scale_color_manual(labels = c("First Hand Houses Index"), values = c("red"))
+        
+        melted <- melt(filter(ege_bolge, Year >= input$year[1] & Year < input$year[2])[, c(as.numeric(cityNames[cityNames[1]==input$city][2]),as.numeric(cityNames[cityNames[1]==input$city][2])+5, 14)], id = "Months")
+            
+        ggplot(data=melted,
+               aes(x=Months, y=value, colour=variable)) +
+            geom_line(aes(colour=variable, group=variable)) +
+            theme(axis.text.x = element_text(angle = 75, vjust = 0.5, hjust=1)) +
+            scale_color_discrete(name = "indexes", labels = c("First Hand", "Second Hand")) +
+            ggtitle("Shiny Housing Price Index Comparison", input$city)
 
     })
     
     output$table <- renderTable({
-        filtered_data()[,(as.numeric(cityNames[cityNames[1]==input$city][2]))]
+        filter(ege_bolge, Year >= input$year[1] & Year < input$year[2])[, c(as.numeric(cityNames[cityNames[1]==input$city][2]), 14)]
 
     })
     
     output$table2 <- renderTable({
 
-        filtered_data()[,((as.numeric(cityNames[cityNames[1]==input$city][2])+5))]
+        filter(ege_bolge, Year >= input$year[1] & Year < input$year[2])[, c(as.numeric(cityNames[cityNames[1]==input$city][2])+5, 14)]
     })
 }
 
