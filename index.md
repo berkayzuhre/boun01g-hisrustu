@@ -24,7 +24,8 @@ This is group HisRüstü's progress journal created for IE 48A of Summer'20 cour
 - [Preprocessing Script](preprocess.R)
 - [Project Proposal](48A_Proposal.html)
 - [Exploratory Data Analysis](Hausing-data.html)
-- [Project Report](final_report_v2.html)
+- [Project Report](FinalReport.html)
+- [Project Report Source Code](FinalReport.Rmd)
 - [Project Presentation](Presentation.pdf)
 - For [Shiny App](https://faruktufekci.shinyapps.io/
 boun01g-hisrustu-project-housing-data/) run the code below on console.
